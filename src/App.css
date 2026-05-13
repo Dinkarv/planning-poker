@@ -242,6 +242,26 @@
   color: var(--accent-soft);
 }
 
+.average-line {
+  margin: 1rem 0 0;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+  font-size: 0.95rem;
+  color: var(--muted);
+}
+
+.average-line strong {
+  color: var(--heading);
+  font-weight: 600;
+}
+
+.average-value {
+  font-size: 1.25rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--accent-soft);
+}
+
 .banner {
   padding: 0.65rem 0.85rem;
   border-radius: 8px;

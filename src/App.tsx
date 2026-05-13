@@ -98,6 +98,16 @@ export default function App() {
   const allVoted =
     players.length > 0 && players.every((p) => p.vote !== null && p.vote !== undefined)
 
+  const voteAverage = useMemo(() => {
+    if (!data?.revealed) return null
+    const nums = players
+      .map((p) => p.vote)
+      .filter((v): v is number => typeof v === 'number' && Number.isFinite(v))
+    if (nums.length === 0) return null
+    const sum = nums.reduce((a, b) => a + b, 0)
+    return { average: sum / nums.length, count: nums.length }
+  }, [data?.revealed, players])
+
   if (!configured) {
     return (
       <div className="shell">
@@ -133,7 +143,8 @@ export default function App() {
           <h1>Planning poker</h1>
           <p className="lede">
             Pick a room name and your display name. Share the link after you join so the team can
-            estimate together. Cards are 1–8; use Show votes / Hide votes when everyone is ready.
+            estimate together. Cards are 1–8; numbers stay hidden in the team list until Show votes.
+            The table then shows each vote and the average.
           </p>
         </header>
         <form className="panel form" onSubmit={onEnterLobby}>
@@ -226,7 +237,10 @@ export default function App() {
 
       <section className="panel">
         <h2 className="section-title">Your vote</h2>
-        <p className="hint-text">While votes are hidden, others only see whether you have chosen a card.</p>
+        <p className="hint-text">
+          Your selection is highlighted on the cards below. Nobody sees any numbers in the team
+          list until someone presses Show votes.
+        </p>
         <div className="cards">
           {CARD_VALUES.map((n) => (
             <button
@@ -258,22 +272,32 @@ export default function App() {
         ) : (
           <ul className="roster">
             {players.map((p) => {
-              const isSelf = p.id === playerId
               const show = data?.revealed
               const v = p.vote
-              const label =
-                v == null ? '—' : show ? String(v) : isSelf ? `${v} (only you)` : 'Ready'
+              let label: string
+              if (show) {
+                label = v == null ? '—' : String(v)
+              } else {
+                label = v == null ? '—' : 'Ready'
+              }
               return (
                 <li key={p.id} className="roster-row">
                   <span className="roster-name">
                     {p.name}
-                    {isSelf ? ' (you)' : ''}
+                    {p.id === playerId ? ' (you)' : ''}
                   </span>
                   <span className={`roster-vote ${show ? 'revealed' : ''}`}>{label}</span>
                 </li>
               )
             })}
           </ul>
+        )}
+        {data?.revealed && voteAverage != null && (
+          <p className="average-line" aria-live="polite">
+            <strong>Average</strong> across {voteAverage.count} vote
+            {voteAverage.count === 1 ? '' : 's'}:{' '}
+            <span className="average-value">{voteAverage.average.toFixed(1)}</span>
+          </p>
         )}
       </section>
     </div>
