@@ -106,7 +106,9 @@ export default function App() {
           <p className="lede">
             Add Supabase environment variables so the app can sync votes in real time. Create a
             free project, run the SQL in <code>supabase/schema.sql</code>, then set the keys below in
-            Vercel (or <code>.env.local</code> locally).
+            Vercel (or <code>.env.local</code> locally). For <code>VITE_SUPABASE_URL</code>, use the
+            value from Supabase → API labeled <strong>Project URL</strong> only (it ends in{' '}
+            <code>.supabase.co</code> — do not add <code>/rest/v1</code>; the client adds that).
           </p>
         </header>
         <section className="panel">
