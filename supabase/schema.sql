@@ -18,5 +18,6 @@ create policy "planning_poker_update" on public.planning_poker_rooms
   for update using (true);
 
 -- Realtime: Dashboard → Database → Replication → enable for planning_poker_rooms
+-- If players do not see live updates, confirm this table is listed under the supabase_realtime publication.
 -- Or (if your project allows it):
 alter publication supabase_realtime add table public.planning_poker_rooms;

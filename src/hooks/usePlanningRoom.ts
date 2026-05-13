@@ -32,7 +32,7 @@ export function usePlanningRoom(roomId: string | null) {
 
   const supabase = useMemo(() => getSupabase(), [])
 
-  const persist = useCallback(
+  const saveRoomData = useCallback(
     async (next: RoomData) => {
       if (!supabase || !roomId) return
       const { error: upErr } = await supabase.from(TABLE).upsert(
@@ -143,23 +143,37 @@ export function usePlanningRoom(roomId: string | null) {
       )
       .subscribe()
 
+    const pollMs = 4000
+    const poll = window.setInterval(() => {
+      if (cancelled) return
+      void refresh()
+    }, pollMs)
+
     return () => {
       cancelled = true
+      window.clearInterval(poll)
       void supabase.removeChannel(ch)
     }
-  }, [supabase, roomId])
+  }, [supabase, roomId, refresh])
 
   const mergeAndSave = useCallback(
     async (patch: (prev: RoomData) => RoomData) => {
-      if (!roomId) return
-      setData((prev) => {
-        const base = prev ?? emptyRoomData()
-        const next = patch(structuredClone(base))
-        void persist(next)
-        return next
-      })
+      if (!supabase || !roomId) return
+      const { data: row, error: selErr } = await supabase
+        .from(TABLE)
+        .select('data')
+        .eq('room_id', roomId)
+        .maybeSingle()
+      if (selErr) {
+        setError(selErr.message)
+        return
+      }
+      const base = row?.data ? parseRowData(row.data) : emptyRoomData()
+      const next = patch(structuredClone(base))
+      setData(next)
+      await saveRoomData(next)
     },
-    [persist, roomId],
+    [supabase, roomId, saveRoomData],
   )
 
   const joinAs = useCallback(
