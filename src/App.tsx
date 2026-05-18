@@ -1,7 +1,7 @@
 import { type FormEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { usePlanningRoom } from './hooks/usePlanningRoom'
 import { isSupabaseConfigured } from './lib/supabase'
-import { CARD_VALUES, normalizeRoomId } from './types/room'
+import { CARD_VALUES, isPresetVote, normalizeRoomId, parseCustomVote } from './types/room'
 import './App.css'
 
 const PLAYER_STORAGE = 'pp-player-id'
@@ -42,6 +42,7 @@ export default function App() {
   const [lobbyRoom, setLobbyRoom] = useState(readInitialRoom)
   const [lobbyName, setLobbyName] = useState('')
   const [activeRoom, setActiveRoom] = useState<string | null>(null)
+  const [customVoteInput, setCustomVoteInput] = useState('')
 
   const roomId = activeRoom
   const { data, loading, error, refresh, joinAs, setVote, setRevealed, resetRound } =
@@ -98,6 +99,16 @@ export default function App() {
   const allVoted =
     players.length > 0 && players.every((p) => p.vote !== null && p.vote !== undefined)
 
+  const myVote = data?.votes[playerId] ?? null
+  const customVoteActive = myVote != null && !isPresetVote(myVote)
+
+  const submitCustomVote = (e: FormEvent) => {
+    e.preventDefault()
+    const value = parseCustomVote(customVoteInput)
+    if (value == null) return
+    setVote(playerId, value)
+  }
+
   const voteAverage = useMemo(() => {
     if (!data?.revealed) return null
     const nums = players
@@ -143,7 +154,8 @@ export default function App() {
           <h1>Planning poker</h1>
           <p className="lede">
             Pick a room name and your display name. Share the link after you join so the team can
-            estimate together. Cards are 1–8; numbers stay hidden in the team list until Show votes.
+            estimate together. Cards are 1–13, or enter a custom value; numbers stay hidden in the
+            team list until Show votes.
             The table then shows each vote and the average.
           </p>
         </header>
@@ -162,7 +174,7 @@ export default function App() {
             <span>Your name</span>
             <input
               autoComplete="name"
-              placeholder="Alex"
+              placeholder="Display name"
               value={lobbyName}
               onChange={(e) => setLobbyName(e.target.value)}
               maxLength={40}
@@ -238,28 +250,61 @@ export default function App() {
       <section className="panel">
         <h2 className="section-title">Your vote</h2>
         <p className="hint-text">
-          Your selection is highlighted on the cards below. Nobody sees any numbers in the team
-          list until someone presses Show votes.
+          Pick a card (1–13) or enter a custom value. Your selection is highlighted. Nobody sees
+          any numbers in the team list until someone presses Show votes.
         </p>
         <div className="cards">
           {CARD_VALUES.map((n) => (
             <button
               key={n}
               type="button"
-              className={`card ${data?.votes[playerId] === n ? 'picked' : ''}`}
-              onClick={() => setVote(playerId, n)}
+              className={`card ${myVote === n ? 'picked' : ''}`}
+              onClick={() => {
+                setCustomVoteInput('')
+                setVote(playerId, n)
+              }}
               disabled={data?.revealed}
-              aria-pressed={data?.votes[playerId] === n}
+              aria-pressed={myVote === n}
             >
               {n}
             </button>
           ))}
         </div>
+        <form className="custom-vote" onSubmit={submitCustomVote}>
+          <label className="field custom-field">
+            <span>Custom value</span>
+            <input
+              type="number"
+              inputMode="decimal"
+              step="any"
+              min={0}
+              max={999}
+              placeholder="e.g. 0.5 or 21"
+              value={customVoteInput}
+              onChange={(e) => setCustomVoteInput(e.target.value)}
+              disabled={data?.revealed}
+              className={customVoteActive ? 'picked-input' : ''}
+              aria-invalid={customVoteInput.trim() !== '' && parseCustomVote(customVoteInput) == null}
+            />
+          </label>
+          <button
+            type="submit"
+            className="btn"
+            disabled={
+              data?.revealed || customVoteInput.trim() === '' || parseCustomVote(customVoteInput) == null
+            }
+          >
+            Vote custom
+          </button>
+        </form>
         <button
           type="button"
           className="btn ghost small-margin"
-          disabled={data?.revealed || data?.votes[playerId] == null}
-          onClick={() => setVote(playerId, null)}
+          disabled={data?.revealed || myVote == null}
+          onClick={() => {
+            setCustomVoteInput('')
+            setVote(playerId, null)
+          }}
         >
           Clear my vote
         </button>

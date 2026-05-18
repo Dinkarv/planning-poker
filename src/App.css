@@ -209,6 +209,25 @@
   border-color: var(--accent);
 }
 
+.custom-vote {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.custom-field {
+  flex: 1;
+  min-width: 10rem;
+}
+
+.custom-field input.picked-input {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+  border-color: var(--accent);
+}
+
 .roster {
   list-style: none;
   margin: 0;
